@@ -132,12 +132,12 @@ export class TocGroupPlugin extends TocPlugin {
 				});
 				if (defaultGroups.length) mapedTocData[DEFAULT_UNGROUPED_NAME] = defaultGroups;
 			}
-			const updatedToc = Object.keys(mapedTocData)
-				.map((key: string) => {
-					const groupedValue = mapedTocData[key];
-					const root = new NavigationItem(key, homePath);
-					root['groupTitle'] = key;
-					root.children = page.toc.children.filter((item: NavigationItem) => {
+			const updatedToc = Object.keys(mapedTocData).map((key: string) => {
+				const groupedValue = mapedTocData[key];
+				const root = new NavigationItem(key, homePath);
+				root['groupTitle'] = key;
+				root.children = page.toc.children
+					.filter((item: NavigationItem) => {
 						if (regexp.test(`@!${item.reflection.kind}`)) return false;
 						if (deprecatedData.has(item.title)) {
 							item['deprecated'] = true;
@@ -147,14 +147,14 @@ export class TocGroupPlugin extends TocPlugin {
 							return true;
 						}
 						return false;
+					})
+					.sort((a: NavigationItem, b: NavigationItem) => {
+						const aKind = a.reflection.kindString;
+						const bKind = b.reflection.kindString;
+						return this.compareKind(sortOrder, aKind, bKind);
 					});
-					return root;
-				})
-				.sort((a: NavigationItem, b: NavigationItem) => {
-					const aKind = a.reflection.kindString;
-					const bKind = b.reflection.kindString;
-					return this.compareKind(sortOrder, aKind, bKind);
-				});
+				return root;
+			});
 			if (updatedToc && updatedToc.length) {
 				page.toc.children = updatedToc;
 			}
