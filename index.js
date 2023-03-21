@@ -24,6 +24,9 @@ module.exports = function(PluginHost) {
 		help: 'The file name of the page that has the grouped menu.',
 		name: 'homePath',
 	});
+	app.options.addDeclaration({
+		name: 'tocKindSortOrder',
+	});
 
 	app.converter.addComponent(P.PLUGIN_NAME, P.TocGroupPlugin);
 
