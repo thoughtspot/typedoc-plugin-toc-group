@@ -50,7 +50,7 @@ export class TocGroupPlugin extends TocPlugin {
 		const userTags = (options.getValue(PLUGIN_NAME) || '').split(',');
 		const groupTags = this.defaultTags.concat(userTags).filter(item => item.length);
 		this.regexp = new RegExp(`@(${groupTags.join('|')})`);
-		const sortOrder = options.getValue('tocKindSortOrder') || [];
+		const sortOrder = (options.getValue('tocKindSortOrder') || '').split(',') || [];
 		this.sortOrder = sortOrder.reduce((acc, item, idx) => {
 			acc[item.toLowerCase()] = idx;
 			return acc;
