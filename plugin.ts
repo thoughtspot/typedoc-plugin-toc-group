@@ -57,8 +57,7 @@ export class TocGroupPlugin extends TocPlugin {
 		}, {});
 	}
 
-	private compareKind(a: string, b: string) {
-		const sortOrder = this.sortOrder;
+	private compareKind(sortOrder: { [key: string]: number }, a: string, b: string) {
 		const aIndex = sortOrder[a.toLowerCase()] || 0;
 		const bIndex = sortOrder[b.toLowerCase()] || 0;
 		return aIndex - bIndex;
@@ -93,7 +92,7 @@ export class TocGroupPlugin extends TocPlugin {
 
 		const homePath = this.application.options.getValue('homePath') || `modules/_index_.${context.project.name.replace(/\-/g, '')}.html`;
 		// put them into context.project.
-		context.project[PLUGIN_NAME] = { groupedData, deprecatedData, mapedTocData, homePath, regexp: this.regexp };
+		context.project[PLUGIN_NAME] = { groupedData, deprecatedData, mapedTocData, homePath, regexp: this.regexp, sortOrder: this.sortOrder };
 	}
 
 	/**
@@ -121,7 +120,7 @@ export class TocGroupPlugin extends TocPlugin {
 	}
 
 	private buildGroupTocContent(page: PageEvent) {
-		const { groupedData, deprecatedData, mapedTocData, homePath, regexp } = page.project[PLUGIN_NAME];
+		const { groupedData, deprecatedData, mapedTocData, homePath, regexp, sortOrder } = page.project[PLUGIN_NAME];
 		if (typeof mapedTocData === 'object' && Object.keys(mapedTocData).length) {
 			// set ungrouped and remove grouped data.
 			if (!mapedTocData[DEFAULT_UNGROUPED_NAME]) {
@@ -133,27 +132,29 @@ export class TocGroupPlugin extends TocPlugin {
 				});
 				if (defaultGroups.length) mapedTocData[DEFAULT_UNGROUPED_NAME] = defaultGroups;
 			}
-			const updatedToc = Object.keys(mapedTocData).map((key: string) => {
-				const groupedValue = mapedTocData[key];
-				const root = new NavigationItem(key, homePath);
-				root['groupTitle'] = key;
-				root.children = page.toc.children.filter((item: NavigationItem) => {
-					if (regexp.test(`@!${item.reflection.kind}`)) return false;
-					if (deprecatedData.has(item.title)) {
-						item['deprecated'] = true;
-					}
-					if (groupedValue.indexOf(item.title) > -1) {
-						item.parent = root;
-						return true;
-					}
-					return false;
+			const updatedToc = Object.keys(mapedTocData)
+				.map((key: string) => {
+					const groupedValue = mapedTocData[key];
+					const root = new NavigationItem(key, homePath);
+					root['groupTitle'] = key;
+					root.children = page.toc.children.filter((item: NavigationItem) => {
+						if (regexp.test(`@!${item.reflection.kind}`)) return false;
+						if (deprecatedData.has(item.title)) {
+							item['deprecated'] = true;
+						}
+						if (groupedValue.indexOf(item.title) > -1) {
+							item.parent = root;
+							return true;
+						}
+						return false;
+					});
+					return root;
+				})
+				.sort((a: NavigationItem, b: NavigationItem) => {
+					const aKind = a.reflection.kindString;
+					const bKind = b.reflection.kindString;
+					return this.compareKind(sortOrder, aKind, bKind);
 				});
-				return root;
-			}).sort((a: NavigationItem, b: NavigationItem) => {
-				const aKind = a.reflection.kindString;
-				const bKind = b.reflection.kindString;
-				return this.compareKind(aKind, bKind);
-			});
 			if (updatedToc && updatedToc.length) {
 				page.toc.children = updatedToc;
 			}
